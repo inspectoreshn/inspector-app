@@ -59,11 +59,41 @@ async function enviarPorCorreo(tipo, campos) {
 }
 
 // Envía en segundo plano sin bloquear la UI
+// Si falla, guarda en cola y reintenta cuando haya conexión
 function enviarEnSegundoPlano(tipo, campos) {
   enviarPorCorreo(tipo, campos).then(ok => {
-    console.log(ok ? '✅ Correo enviado' : '⚠️ No se pudo enviar el correo');
+    if (!ok) guardarEnCola(tipo, campos);
   });
 }
+
+// Cola de pendientes en localStorage
+function guardarEnCola(tipo, campos) {
+  const cola = JSON.parse(localStorage.getItem('cola_pendientes') || '[]');
+  cola.push({ tipo, campos, ts: Date.now() });
+  localStorage.setItem('cola_pendientes', JSON.stringify(cola));
+  console.log('📥 Guardado en cola. Pendientes:', cola.length);
+}
+
+async function procesarCola() {
+  const cola = JSON.parse(localStorage.getItem('cola_pendientes') || '[]');
+  if (cola.length === 0) return;
+  console.log('🔄 Procesando cola:', cola.length, 'pendientes');
+  const restantes = [];
+  for (const item of cola) {
+    const ok = await enviarPorCorreo(item.tipo, item.campos);
+    if (!ok) restantes.push(item);
+  }
+  localStorage.setItem('cola_pendientes', JSON.stringify(restantes));
+  if (restantes.length < cola.length) {
+    console.log('✅ Enviados:', cola.length - restantes.length, '| Pendientes:', restantes.length);
+  }
+}
+
+// Procesar cola automáticamente cuando regresa la conexión
+window.addEventListener('online', () => {
+  console.log('🌐 Conexión restaurada — procesando cola...');
+  procesarCola();
+});
 
 // Comprime una imagen base64 al ancho y calidad indicados
 function comprimirImagen(base64, maxWidth, quality) {
