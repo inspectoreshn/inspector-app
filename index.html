@@ -541,8 +541,26 @@
                                 <input type="number" id="viajeKmInicial" placeholder="Ej: 12500" required>
                             </div>
                             <div class="form-group">
+                                <label>Foto Km Inicial</label>
+                                <div class="photo-preview" id="viajeKmInicialPreview"><p>No hay foto</p></div>
+                                <div class="photo-buttons">
+                                    <button type="button" class="btn-photo" onclick="openCamera('viajeKmInicial')">📷 Tomar Foto</button>
+                                    <button type="button" class="btn-photo" onclick="openGallery('viajeKmInicial')">🖼️ Galería</button>
+                                </div>
+                                <input type="file" id="viajeKmInicialGallery" accept="image/*" style="display:none;">
+                            </div>
+                            <div class="form-group">
                                 <label for="viajeKmFinal">Kilometraje Final</label>
                                 <input type="number" id="viajeKmFinal" placeholder="Ej: 12800" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Foto Km Final</label>
+                                <div class="photo-preview" id="viajeKmFinalPreview"><p>No hay foto</p></div>
+                                <div class="photo-buttons">
+                                    <button type="button" class="btn-photo" onclick="openCamera('viajeKmFinal')">📷 Tomar Foto</button>
+                                    <button type="button" class="btn-photo" onclick="openGallery('viajeKmFinal')">🖼️ Galería</button>
+                                </div>
+                                <input type="file" id="viajeKmFinalGallery" accept="image/*" style="display:none;">
                             </div>
                             <div class="form-group">
                                 <label>Foto del Tablero/Odómetro (obligatoria)</label>

@@ -1,3 +1,5 @@
+﻿
+
 // Obtener elementos del DOM
 const CORREO_DESTINO = 'galdamezalberto2000@gmail.com';
 
@@ -416,6 +418,12 @@ function capturePhoto() {
     } else if (currentPhotoType === 'viajeTablero') {
         viajeTableroFoto = photoData;
         document.getElementById('viajeTableroPreview').innerHTML = `<img src="${photoData}" alt="Tablero">`;
+    } else if (currentPhotoType === 'viajeKmInicial') {
+        viajeKmInicialFoto = photoData;
+        document.getElementById('viajeKmInicialPreview').innerHTML = `<img src="${photoData}" alt="Km Inicial">`;
+    } else if (currentPhotoType === 'viajeKmFinal') {
+        viajeKmFinalFoto = photoData;
+        document.getElementById('viajeKmFinalPreview').innerHTML = `<img src="${photoData}" alt="Km Final">`;
     } else if (currentPhotoType === 'inspeccionMoto') {
         inspeccionMotoFoto = photoData;
         document.getElementById('inspeccionMotoPreview').innerHTML = `<img src="${photoData}" alt="Moto">`;
@@ -470,6 +478,10 @@ function openGallery(type) {
         document.getElementById('reubicacionMedidorGallery').click();
     } else if (type === 'viajeTablero') {
         document.getElementById('viajeTableroGallery').click();
+    } else if (type === 'viajeKmInicial') {
+        document.getElementById('viajeKmInicialGallery').click();
+    } else if (type === 'viajeKmFinal') {
+        document.getElementById('viajeKmFinalGallery').click();
     } else if (type === 'inspeccionMoto') {
         document.getElementById('inspeccionMotoGallery').click();
     } else if (type === 'inspeccionRetro') {
@@ -976,15 +988,13 @@ function generarPDFMedidor(reporte) {
 
     // Encabezado
     pdf.setFillColor(colorPrimario[0], colorPrimario[1], colorPrimario[2]);
-    pdf.rect(0, 0, 210, 40, 'F');
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(22);
     pdf.setFont(undefined, 'bold');
-    pdf.text('MEDIDOR FUERA DE LÍNEA', 105, 20, { align: 'center' });
+    pdf.text('MEDIDOR FUERA DE LINEA', 105, 20, { align: 'center' });
     pdf.setFontSize(11);
     pdf.setFont(undefined, 'normal');
-    pdf.text(`Reporte #${reporte.id}`, 105, 30, { align: 'center' });
-
+    pdf.text('Reporte #' + reporte.id, 105, 30, { align: 'center' });
     // Datos
     let y = 55;
     pdf.setTextColor(0, 0, 0);
@@ -1694,6 +1704,7 @@ document.getElementById('reubicacionForm').addEventListener('submit', async (e) 
     document.querySelector('#reubicacionScreen .btn-coords').textContent = '📍 Obtener Ubicación';
     document.getElementById('reubicacionFecha').value = new Date().toLocaleString('es-ES', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
     btn.textContent = '📤 Enviar Reporte'; btn.disabled = false;
+    generarPDFReubicacion(r);
     alert('✅ Reporte enviado al correo correctamente.');
 });
 
@@ -2307,6 +2318,8 @@ function generarPDFFactura(r) {
 
 // Variables de fotos moto
 let viajeTableroFoto = null;
+let viajeKmInicialFoto = null;
+let viajeKmFinalFoto = null;
 let inspeccionMotoFoto = null;
 let inspeccionRetroFoto = null;
 let inspeccionLlantasFoto = null;
@@ -2337,6 +2350,8 @@ function mostrarTabMoto(tab) {
 // Event listeners galería moto
 [
     ['viajeTableroGallery',    'viajeTableroPreview',    (d) => { viajeTableroFoto = d; }],
+    ['viajeKmInicialGallery',  'viajeKmInicialPreview',  (d) => { viajeKmInicialFoto = d; }],
+    ['viajeKmFinalGallery',    'viajeKmFinalPreview',    (d) => { viajeKmFinalFoto = d; }],
     ['inspeccionMotoGallery',  'inspeccionMotoPreview',  (d) => { inspeccionMotoFoto = d; }],
     ['inspeccionRetroGallery', 'inspeccionRetroPreview', (d) => { inspeccionRetroFoto = d; }],
     ['inspeccionLlantasGallery', 'inspeccionLlantasPreview', (d) => { inspeccionLlantasFoto = d; }],
@@ -2378,7 +2393,9 @@ document.getElementById('motoViajeForm').addEventListener('submit', async (e) =>
 
     guardarReporte('MotoViaje', {
         inspector, fecha, kmInicial, kmFinal, kmRecorridos,
-        fotoTablero: viajeTableroFoto
+        fotoTablero: viajeTableroFoto,
+        fotoKmInicial: viajeKmInicialFoto,
+        fotoKmFinal: viajeKmFinalFoto
     });
 
     const ok = await enviarPorCorreo('🛣️ Registro de Viaje - ' + inspector, {
@@ -2392,11 +2409,20 @@ document.getElementById('motoViajeForm').addEventListener('submit', async (e) =>
     });
 
     // Generar PDF y descargar
-    generarPDFMotoViaje({ inspector, fecha, kmInicial, kmFinal, kmRecorridos, foto: viajeTableroFoto });
+    generarPDFMotoViaje({
+        inspector, fecha, kmInicial, kmFinal, kmRecorridos,
+        foto: viajeTableroFoto,
+        fotoKmInicial: viajeKmInicialFoto,
+        fotoKmFinal: viajeKmFinalFoto
+    });
 
     document.getElementById('motoViajeForm').reset();
     viajeTableroFoto = null;
+    viajeKmInicialFoto = null;
+    viajeKmFinalFoto = null;
     document.getElementById('viajeTableroPreview').innerHTML = '<p>No hay foto</p>';
+    document.getElementById('viajeKmInicialPreview').innerHTML = '<p>No hay foto</p>';
+    document.getElementById('viajeKmFinalPreview').innerHTML = '<p>No hay foto</p>';
     document.getElementById('viajeFecha').value = new Date().toISOString().split('T')[0];
     btn.textContent = '📤 Enviar Registro de Viaje'; btn.disabled = false;
     alert(ok ? '✅ Registro enviado y PDF descargado.' : '⚠️ PDF descargado pero no se pudo enviar el correo.');
@@ -2528,7 +2554,26 @@ function generarPDFMotoViaje(r) {
     pdf.setLineWidth(0.5);
     pdf.line(20, y, 190, y); y += 10;
 
-    pdf.setFontSize(13);
+    // Fotos km inicial y final lado a lado
+    if (r.fotoKmInicial || r.fotoKmFinal) {
+        pdf.setFontSize(11);
+        pdf.setFont(undefined, 'bold');
+        pdf.setTextColor(color[0], color[1], color[2]);
+        if (r.fotoKmInicial) {
+            pdf.text('FOTO KM INICIAL', 20, y);
+            try { pdf.addImage(r.fotoKmInicial, 'JPEG', 20, y + 4, 80, 70); } catch(e) {}
+        }
+        if (r.fotoKmFinal) {
+            pdf.text('FOTO KM FINAL', 110, y);
+            try { pdf.addImage(r.fotoKmFinal, 'JPEG', 110, y + 4, 80, 70); } catch(e) {}
+        }
+        y += 82;
+        pdf.setDrawColor(color[0], color[1], color[2]);
+        pdf.setLineWidth(0.5);
+        pdf.line(20, y, 190, y); y += 10;
+    }
+
+    pdf.setFontSize(11);
     pdf.setFont(undefined, 'bold');
     pdf.setTextColor(color[0], color[1], color[2]);
     pdf.text('FOTO DEL TABLERO / ODÓMETRO', 20, y); y += 6;
