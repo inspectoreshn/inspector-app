@@ -4,7 +4,7 @@
 const CORREO_DESTINO = 'galdamezalberto2000@gmail.com';
 
 // URL del Google Apps Script — fija en el código
-const GAS_URL_FIJA = 'https://script.google.com/macros/s/AKfycbyxq2rAzXppSH1bbSisTsiPLXcuRIFGYd3mTZWccFEyh_kqMQN8O4MWeCJpgWtZ1iDR4A/exec';
+const GAS_URL_FIJA = 'https://script.google.com/macros/s/AKfycbwrGJkU0vA3gikRd5SuZTuglw0Vt-yGrKJdse0S8fJOaITYfxFr5GhdQVm1G9JY-XNAAg/exec';
 
 function getScriptURL() {
   // Llamada directa al Google Apps Script (sin proxy)
