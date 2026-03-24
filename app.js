@@ -35,9 +35,6 @@ async function enviarPorCorreo(tipo, campos) {
     const payload = { tipo, ...camposTexto };
     if (fotoKeys.length > 0) payload[fotoKeys[0]] = camposFotos[fotoKeys[0]];
 
-    console.log('Tamaño payload KB:', Math.round(JSON.stringify(payload).length / 1024));
-
-    // GAS requiere redirect:'follow' para funcionar desde móviles sin proxy
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     const res = await fetch(url, {
@@ -53,13 +50,19 @@ async function enviarPorCorreo(tipo, campos) {
       const data = JSON.parse(text);
       return data.success === true;
     } catch {
-      // GAS a veces retorna HTML en redirect, considerar éxito si status ok
       return res.ok;
     }
   } catch (e) {
     console.error('Error envío:', e);
     return false;
   }
+}
+
+// Envía en segundo plano sin bloquear la UI
+function enviarEnSegundoPlano(tipo, campos) {
+  enviarPorCorreo(tipo, campos).then(ok => {
+    console.log(ok ? '✅ Correo enviado' : '⚠️ No se pudo enviar el correo');
+  });
 }
 
 // Comprime una imagen base64 al ancho y calidad indicados
@@ -965,7 +968,7 @@ document.getElementById('medidorForm').addEventListener('submit', async (e) => {
         foto: medidorFoto
     });
 
-    await enviarPorCorreo('📡 Medidor fuera de línea - ' + currentUser, {
+    enviarEnSegundoPlano('📡 Medidor fuera de línea - ' + currentUser, {
         'Usuario': currentUser, 'Fecha': reporte.fecha,
         'Numero_Medidor': numMedidor,
         'Latitud': lat || 'No registrada', 'Longitud': lng || 'No registrada',
@@ -1198,7 +1201,7 @@ document.getElementById('erroresForm').addEventListener('submit', async (e) => {
         foto: r.foto
     });
 
-    await enviarPorCorreo('⚠️ Error en campo - ' + r.inspector, {
+    enviarEnSegundoPlano('⚠️ Error en campo - ' + r.inspector, {
         'Usuario': currentUser, 'Fecha': r.fecha, 'Inspector': r.inspector,
         'Clave': r.clave, 'Numero_Medidor': r.numMedidor,
         'Lectura_Correcta': r.lecturaCorrecta, 'Lectura_Incorrecta': r.lecturaIncorrecta,
@@ -1440,7 +1443,7 @@ document.getElementById('consumoForm').addEventListener('submit', async (e) => {
         fotoFachada: consumoFachadaFoto, fotoMedidor: consumoMedidorFoto
     });
 
-    await enviarPorCorreo('Bajo consumo - Clave ' + r.clave, {
+    enviarEnSegundoPlano('Bajo consumo - Clave ' + r.clave, {
         'Usuario': currentUser, 'Fecha': r.fecha, 'Clave': r.clave,
         'Numero_Medidor': r.numMedidor, 'Observaciones': r.observaciones || 'Ninguna',
         'Latitud': r.lat || 'No registrada', 'Longitud': r.lng || 'No registrada',
@@ -1690,7 +1693,7 @@ document.getElementById('reubicacionForm').addEventListener('submit', async (e) 
         fotoFachada: reubicacionFachadaFoto, fotoMedidor: reubicacionMedidorFoto
     });
 
-    await enviarPorCorreo('📍 Reubicación - Clave ' + r.clave, {
+    enviarEnSegundoPlano('📍 Reubicación - Clave ' + r.clave, {
         'Usuario': currentUser, 'Fecha': r.fecha, 'Clave': r.clave,
         'Numero_Medidor': r.numMedidor, 'Observaciones': r.observaciones || 'Ninguna',
         'Latitud': r.lat || 'No registrada', 'Longitud': r.lng || 'No registrada',
@@ -1952,7 +1955,7 @@ document.getElementById('postesForm').addEventListener('submit', async (e) => {
         lat: r.lat, lng: r.lng, fotos: r.fotos
     });
 
-    await enviarPorCorreo('🪵 Postes derribados - Clave ' + r.clave, {
+    enviarEnSegundoPlano('🪵 Postes derribados - Clave ' + r.clave, {
         'Usuario': currentUser, 'Fecha': r.fecha, 'Clave': r.clave,
         'Contiguo': r.contiguo, 'Cantidad_Fotos': r.fotos.length,
         'Observaciones': r.observaciones || 'Ninguna',
@@ -2233,7 +2236,7 @@ document.getElementById('facturasForm').addEventListener('submit', async (e) => 
         camposCorreo[key] = foto;
     });
 
-    await enviarPorCorreo(`🧾 Factura ${tipo} - ${inspector}`, camposCorreo);
+    enviarEnSegundoPlano(`🧾 Factura ${tipo} - ${inspector}`, camposCorreo);
 
     document.getElementById('facturasForm').reset();
     facturasFotos = [];
@@ -2402,7 +2405,7 @@ document.getElementById('motoViajeForm').addEventListener('submit', async (e) =>
         fotoKmFinal: viajeKmFinalFoto
     });
 
-    const ok = await enviarPorCorreo('🛣️ Registro de Viaje - ' + inspector, {
+    enviarEnSegundoPlano('🛣️ Registro de Viaje - ' + inspector, {
         'Inspector': inspector,
         'Fecha': fecha,
         'Km_Inicial': kmInicial,
@@ -2429,7 +2432,7 @@ document.getElementById('motoViajeForm').addEventListener('submit', async (e) =>
     document.getElementById('viajeKmFinalPreview').innerHTML = '<p>No hay foto</p>';
     document.getElementById('viajeFecha').value = new Date().toISOString().split('T')[0];
     btn.textContent = '📤 Enviar Registro de Viaje'; btn.disabled = false;
-    alert(ok ? '✅ Registro enviado y PDF descargado.' : '⚠️ PDF descargado pero no se pudo enviar el correo.');
+    alert('✅ Registro guardado y PDF descargado. Correo enviándose en segundo plano.');
 });
 
 // ---- Submit: Inspección Técnica ----
@@ -2455,7 +2458,7 @@ document.getElementById('motoInspeccionForm').addEventListener('submit', async (
 
     guardarReporte('MotoInspeccion', { inspector, fecha, observaciones, fotos });
 
-    const ok = await enviarPorCorreo('🔍 Inspección Moto - ' + inspector, {
+    enviarEnSegundoPlano('🔍 Inspección Moto - ' + inspector, {
         'Inspector': inspector,
         'Fecha': fecha,
         'Observaciones': observaciones || 'Ninguna',
@@ -2474,7 +2477,7 @@ document.getElementById('motoInspeccionForm').addEventListener('submit', async (
         .forEach(id => document.getElementById(id).innerHTML = '<p>No hay foto</p>');
     document.getElementById('inspeccionFecha').value = new Date().toISOString().split('T')[0];
     btn.textContent = '📤 Enviar Inspección'; btn.disabled = false;
-    alert(ok ? '✅ Inspección enviada y PDF descargado.' : '⚠️ PDF descargado pero no se pudo enviar el correo.');
+    alert('✅ Inspección guardada y PDF descargado. Correo enviándose en segundo plano.');
 });
 
 // ---- Submit: Gastos ----
@@ -2496,7 +2499,7 @@ document.getElementById('motoGastosForm').addEventListener('submit', async (e) =
         fotoFactura: gastosFacturaFoto
     });
 
-    const ok = await enviarPorCorreo('💰 Gasto Moto - ' + inspector, {
+    enviarEnSegundoPlano('💰 Gasto Moto - ' + inspector, {
         'Inspector': inspector,
         'Fecha': fecha,
         'Tipo_Gasto': tipo,
@@ -2513,7 +2516,7 @@ document.getElementById('motoGastosForm').addEventListener('submit', async (e) =
     document.getElementById('gastosFacturaPreview').innerHTML = '<p>No hay foto</p>';
     document.getElementById('gastosFecha').value = new Date().toISOString().split('T')[0];
     btn.textContent = '📤 Enviar Gasto'; btn.disabled = false;
-    alert(ok ? '✅ Gasto enviado y PDF descargado.' : '⚠️ PDF descargado pero no se pudo enviar el correo.');
+    alert('✅ Gasto guardado y PDF descargado. Correo enviándose en segundo plano.');
 });
 
 // ---- PDF: Viaje ----
