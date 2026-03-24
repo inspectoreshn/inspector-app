@@ -927,17 +927,25 @@ document.getElementById('medidorGallery').addEventListener('change', (e) => {
 // Aplicar coordenadas ingresadas manualmente
 function aplicarCoordsManuales(modulo) {
     const prefijos = {
-        'medidor':    { lat: 'medidorLatManual',    lng: 'medidorLngManual',    hidLat: 'medidorLat',    hidLng: 'medidorLng',    box: 'coordsBox' },
-        'error':      { lat: 'errorLatManual',      lng: 'errorLngManual',      hidLat: 'errorLat',      hidLng: 'errorLng',      box: 'errorCoordsBox' },
-        'consumo':    { lat: 'consumoLatManual',     lng: 'consumoLngManual',    hidLat: 'consumoLat',    hidLng: 'consumoLng',    box: 'consumoCoordsBox' },
-        'reubicacion':{ lat: 'reubicacionLatManual', lng: 'reubicacionLngManual',hidLat: 'reubicacionLat',hidLng: 'reubicacionLng',box: 'reubicacionCoordsBox' },
-        'postes':     { lat: 'postesLatManual',      lng: 'postesLngManual',     hidLat: 'postesLat',     hidLng: 'postesLng',     box: 'postesCoordsBox' },
+        'medidor':    { input: 'medidorCoordManual',    hidLat: 'medidorLat',    hidLng: 'medidorLng',    box: 'coordsBox' },
+        'error':      { input: 'errorCoordManual',      hidLat: 'errorLat',      hidLng: 'errorLng',      box: 'errorCoordsBox' },
+        'consumo':    { input: 'consumoCoordManual',     hidLat: 'consumoLat',    hidLng: 'consumoLng',    box: 'consumoCoordsBox' },
+        'reubicacion':{ input: 'reubicacionCoordManual', hidLat: 'reubicacionLat',hidLng: 'reubicacionLng',box: 'reubicacionCoordsBox' },
+        'postes':     { input: 'postesCoordManual',      hidLat: 'postesLat',     hidLng: 'postesLng',     box: 'postesCoordsBox' },
     };
     const cfg = prefijos[modulo];
     if (!cfg) return;
-    const lat = document.getElementById(cfg.lat).value.trim();
-    const lng = document.getElementById(cfg.lng).value.trim();
-    if (!lat || !lng) { alert('Ingresa latitud y longitud'); return; }
+
+    const raw = document.getElementById(cfg.input).value.trim();
+    // Acepta formatos: "14.0839, -89.2182" o "14.0839 -89.2182"
+    const parts = raw.split(/[\s,]+/).filter(p => p);
+    if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) {
+        alert('Formato inválido. Usa: 14.0839, -89.2182');
+        return;
+    }
+    const lat = parseFloat(parts[0]);
+    const lng = parseFloat(parts[1]);
+
     document.getElementById(cfg.hidLat).value = lat;
     document.getElementById(cfg.hidLng).value = lng;
     document.getElementById(cfg.box).innerHTML = `
