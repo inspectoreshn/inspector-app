@@ -675,7 +675,7 @@ async function generarYEnviarPDF(informe) {
     
     yPos += 5;
     try {
-        pdf.addImage(informe.facturaPhoto, 'JPEG', 20, yPos, 80, 80);
+        pdf.addImage(informe.facturaPhoto || informe.fotoFactura, 'JPEG', 20, yPos, 80, 80);
     } catch (error) {
         console.error('Error al agregar foto de factura:', error);
     }
@@ -686,7 +686,7 @@ async function generarYEnviarPDF(informe) {
     pdf.text('FOTO DE MOTO EN TALLER', 110, yPos - 5);
     
     try {
-        pdf.addImage(informe.motoPhoto, 'JPEG', 110, yPos, 80, 80);
+        pdf.addImage(informe.motoPhoto || informe.fotoMoto, 'JPEG', 110, yPos, 80, 80);
     } catch (error) {
         console.error('Error al agregar foto de moto:', error);
     }
@@ -829,7 +829,7 @@ function generarPDF(informe) {
     
     yPos += 5;
     try {
-        pdf.addImage(informe.facturaPhoto, 'JPEG', 20, yPos, 80, 80);
+        pdf.addImage(informe.facturaPhoto || informe.fotoFactura, 'JPEG', 20, yPos, 80, 80);
     } catch (error) {
         console.error('Error al agregar foto de factura:', error);
     }
@@ -840,7 +840,7 @@ function generarPDF(informe) {
     pdf.text('FOTO DE MOTO EN TALLER', 110, yPos - 5);
     
     try {
-        pdf.addImage(informe.motoPhoto, 'JPEG', 110, yPos, 80, 80);
+        pdf.addImage(informe.motoPhoto || informe.fotoMoto, 'JPEG', 110, yPos, 80, 80);
     } catch (error) {
         console.error('Error al agregar foto de moto:', error);
     }
@@ -923,6 +923,29 @@ document.getElementById('medidorGallery').addEventListener('change', (e) => {
         reader.readAsDataURL(file);
     }
 });
+
+// Aplicar coordenadas ingresadas manualmente
+function aplicarCoordsManuales(modulo) {
+    const prefijos = {
+        'medidor':    { lat: 'medidorLatManual',    lng: 'medidorLngManual',    hidLat: 'medidorLat',    hidLng: 'medidorLng',    box: 'coordsBox' },
+        'error':      { lat: 'errorLatManual',      lng: 'errorLngManual',      hidLat: 'errorLat',      hidLng: 'errorLng',      box: 'errorCoordsBox' },
+        'consumo':    { lat: 'consumoLatManual',     lng: 'consumoLngManual',    hidLat: 'consumoLat',    hidLng: 'consumoLng',    box: 'consumoCoordsBox' },
+        'reubicacion':{ lat: 'reubicacionLatManual', lng: 'reubicacionLngManual',hidLat: 'reubicacionLat',hidLng: 'reubicacionLng',box: 'reubicacionCoordsBox' },
+        'postes':     { lat: 'postesLatManual',      lng: 'postesLngManual',     hidLat: 'postesLat',     hidLng: 'postesLng',     box: 'postesCoordsBox' },
+    };
+    const cfg = prefijos[modulo];
+    if (!cfg) return;
+    const lat = document.getElementById(cfg.lat).value.trim();
+    const lng = document.getElementById(cfg.lng).value.trim();
+    if (!lat || !lng) { alert('Ingresa latitud y longitud'); return; }
+    document.getElementById(cfg.hidLat).value = lat;
+    document.getElementById(cfg.hidLng).value = lng;
+    document.getElementById(cfg.box).innerHTML = `
+        <p>📍 <strong>Coordenadas manuales</strong></p>
+        <p>Lat: ${lat} | Lng: ${lng}</p>
+        <a class="map-link" href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">🗺️ Ver en Google Maps</a>`;
+    document.getElementById(cfg.box).classList.add('active');
+}
 
 // Obtener coordenadas GPS
 function obtenerCoordenadas() {

@@ -1215,3 +1215,30 @@ body {
     .informe-card { padding: 16px; }
     .card-actions { grid-template-columns: 1fr; }
 }
+
+/* Coordenadas manuales */
+.coords-manual {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+.coords-manual input {
+    flex: 1;
+    min-width: 120px;
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 13px;
+}
+.btn-coords-manual {
+    padding: 8px 14px;
+    background: #22c55e;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.btn-coords-manual:hover { background: #16a34a; }

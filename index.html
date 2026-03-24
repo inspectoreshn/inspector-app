@@ -233,6 +233,11 @@
                             <label>Coordenadas GPS</label>
                             <div class="coords-box" id="postesCoordsBox"><p>Sin coordenadas</p></div>
                             <button type="button" class="btn-coords" onclick="obtenerCoordenadasPostes()">📍 Obtener Ubicación</button>
+                            <div class="coords-manual">
+                                <input type="number" id="postesLatManual" placeholder="Latitud manual (ej: 14.0839)" step="any">
+                                <input type="number" id="postesLngManual" placeholder="Longitud manual (ej: -89.2182)" step="any">
+                                <button type="button" class="btn-coords-manual" onclick="aplicarCoordsManuales('postes')">✅ Aplicar</button>
+                            </div>
                             <input type="hidden" id="postesLat">
                             <input type="hidden" id="postesLng">
                         </div>
@@ -289,6 +294,11 @@
                             <label>Coordenadas GPS</label>
                             <div class="coords-box" id="reubicacionCoordsBox"><p>Sin coordenadas</p></div>
                             <button type="button" class="btn-coords" onclick="obtenerCoordenadasReubicacion()">📍 Obtener Ubicación</button>
+                            <div class="coords-manual">
+                                <input type="number" id="reubicacionLatManual" placeholder="Latitud manual (ej: 14.0839)" step="any">
+                                <input type="number" id="reubicacionLngManual" placeholder="Longitud manual (ej: -89.2182)" step="any">
+                                <button type="button" class="btn-coords-manual" onclick="aplicarCoordsManuales('reubicacion')">✅ Aplicar</button>
+                            </div>
                             <input type="hidden" id="reubicacionLat">
                             <input type="hidden" id="reubicacionLng">
                         </div>
@@ -345,6 +355,11 @@
                             <label>Coordenadas GPS</label>
                             <div class="coords-box" id="consumoCoordsBox"><p>Sin coordenadas</p></div>
                             <button type="button" class="btn-coords" onclick="obtenerCoordenadasConsumo()">📍 Obtener Ubicación</button>
+                            <div class="coords-manual">
+                                <input type="number" id="consumoLatManual" placeholder="Latitud manual (ej: 14.0839)" step="any">
+                                <input type="number" id="consumoLngManual" placeholder="Longitud manual (ej: -89.2182)" step="any">
+                                <button type="button" class="btn-coords-manual" onclick="aplicarCoordsManuales('consumo')">✅ Aplicar</button>
+                            </div>
                             <input type="hidden" id="consumoLat">
                             <input type="hidden" id="consumoLng">
                         </div>
@@ -408,6 +423,11 @@
                                 <p id="errorCoordsText">Sin coordenadas</p>
                             </div>
                             <button type="button" class="btn-coords" onclick="obtenerCoordenadasError()">📍 Obtener Ubicación</button>
+                            <div class="coords-manual">
+                                <input type="number" id="errorLatManual" placeholder="Latitud manual (ej: 14.0839)" step="any">
+                                <input type="number" id="errorLngManual" placeholder="Longitud manual (ej: -89.2182)" step="any">
+                                <button type="button" class="btn-coords-manual" onclick="aplicarCoordsManuales('error')">✅ Aplicar</button>
+                            </div>
                             <input type="hidden" id="errorLat">
                             <input type="hidden" id="errorLng">
                         </div>
@@ -445,6 +465,11 @@
                                 <p id="coordsText">Sin coordenadas</p>
                             </div>
                             <button type="button" class="btn-coords" onclick="obtenerCoordenadas()">📍 Obtener Ubicación</button>
+                            <div class="coords-manual">
+                                <input type="number" id="medidorLatManual" placeholder="Latitud manual (ej: 14.0839)" step="any">
+                                <input type="number" id="medidorLngManual" placeholder="Longitud manual (ej: -89.2182)" step="any">
+                                <button type="button" class="btn-coords-manual" onclick="aplicarCoordsManuales('medidor')">✅ Aplicar</button>
+                            </div>
                             <input type="hidden" id="medidorLat">
                             <input type="hidden" id="medidorLng">
                         </div>
