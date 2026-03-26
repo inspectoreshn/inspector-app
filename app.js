@@ -3328,7 +3328,7 @@ function toggleReporte(id) {
 }
 
 // Columnas a mostrar y sus etiquetas
-const CAMPOS_LABEL = {
+var CAMPOS_LABEL = {
     'Inspector':'Inspector', 'Usuario':'Usuario', 'Fecha':'Fecha',
     'Clave':'Clave', 'N° Medidor':'N° Medidor', 'Observaciones':'Observaciones',
     'Latitud':'Latitud', 'Longitud':'Longitud', 'Google Maps':'Google Maps',
@@ -3340,7 +3340,7 @@ const CAMPOS_LABEL = {
 };
 
 // Campos que ocupan ancho completo
-const CAMPOS_FULL = ['Observaciones', 'Google Maps'];
+var CAMPOS_FULL = ['Observaciones', 'Google Maps'];
 
 function buildCamposReporte(r) {
     return Object.entries(CAMPOS_LABEL)
