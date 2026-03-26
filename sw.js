@@ -1,4 +1,4 @@
-const CACHE_NAME = 'inspector-app-v14';
+const CACHE_NAME = 'inspector-app-v15';
 const ASSETS = [
   './',
   './index.html',

@@ -3203,7 +3203,12 @@ async function cargarReportesSupervisor() {
         _todosLosReportes = data.reportes || [];
         poblarFiltroInspectores(_todosLosReportes);
         actualizarStats(_todosLosReportes);
-        aplicarFiltros();
+        try {
+            aplicarFiltros();
+        } catch(renderErr) {
+            console.error('Error en renderizado:', renderErr);
+            lista.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Error al mostrar reportes.<br><small>${renderErr.message}</small></p></div>`;
+        }
 
     } catch(err) {
         lista.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>No se pudo conectar al servidor.<br><small>${err.message}</small></p></div>`;
@@ -3287,6 +3292,7 @@ function renderDashboard(reportes) {
     }
 
     lista.innerHTML = reportes.map((r, idx) => {
+        try {
         const modulo    = r['Módulo'] || r['Modulo'] || 'Reporte';
         const inspector = r['Inspector'] || r['Usuario'] || '—';
         const fecha     = r['Fecha'] || '';
@@ -3318,6 +3324,7 @@ function renderDashboard(reportes) {
                 ${fechaReg ? `<div style="margin-top:10px;font-size:11px;color:var(--gray-400);">🕐 Registrado: ${fechaReg}</div>` : ''}
             </div>
         </div>`;
+        } catch(e) { return `<div class="reporte-card"><p style="padding:12px;color:red;">Error en reporte ${idx}: ${e.message}</p></div>`; }
     }).join('');
 }
 
