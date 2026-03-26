@@ -3019,9 +3019,6 @@ const SUBSEDES_KEY = 'subsedes_inspectores';
 const INSPECTOR_SELECT_IDS = [
     'errorInspector',
     'facturasInspector',
-    'viajeInspector',
-    'inspeccionInspector',
-    'gastosInspector',
     'cascoInspector',
 ];
 
