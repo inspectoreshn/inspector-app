@@ -3172,7 +3172,7 @@ function limpiarFiltros() {
 }
 
 // Cache de todos los reportes cargados
-let _todosLosReportes = [];
+var _todosLosReportes = [];
 
 // Carga reportes desde Google Sheets via GAS
 async function cargarReportesSupervisor() {
