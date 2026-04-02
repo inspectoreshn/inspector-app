@@ -2480,7 +2480,9 @@ function mostrarTabMoto(tab) {
     ['cascoViseraGallery',     'cascoViseraPreview',     (d) => { cascoViseraFoto = d; }],
     ['cascoSeguroGallery',     'cascoSeguroPreview',     (d) => { cascoSeguroFoto = d; }],
 ].forEach(([galleryId, previewId, setter]) => {
-    document.getElementById(galleryId).addEventListener('change', (e) => {
+    // Usar delegación en document para manejar elementos en tabs ocultos
+    document.addEventListener('change', (e) => {
+        if (e.target.id !== galleryId) return;
         const file = e.target.files[0];
         if (file && file.type.startsWith('image/')) {
             const reader = new FileReader();
