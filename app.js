@@ -2455,6 +2455,10 @@ function mostrarTabMoto(tab) {
     const tabs = document.querySelectorAll('.moto-tab');
     const idx = ['viaje', 'inspeccion', 'gastos', 'casco'].indexOf(tab);
     if (tabs[idx]) tabs[idx].classList.add('active');
+
+    // Re-registrar listeners de galería al mostrar el tab
+    registrarGaleriasMoto();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 // Patch openOption para incluir moto — ya integrado directamente en openOption arriba
@@ -2462,36 +2466,46 @@ function mostrarTabMoto(tab) {
 // Captura de fotos moto y galería — ya integrados directamente en capturePhoto y openGallery arriba
 
 // Event listeners galería moto
-[
-    ['viajeTableroGallery',     'viajeTableroPreview',    (d) => { viajeTableroFoto = d; }],
-    ['viajeKmInicialGallery2',  'viajeKmInicialPreview',  (d) => { viajeKmInicialFoto = d; }],
-    ['viajeKmFinalGallery',     'viajeKmFinalPreview',    (d) => { viajeKmFinalFoto = d; }],
-    ['viajeKmFinalTardeGallery2','viajeKmFinalTardePreview',(d) => { viajeKmFinalTardeFoto = d; }],
-    ['viajeTableroTardeGallery2','viajeTableroTardePreview',(d) => { viajeTableroTardeFoto = d; }],
-    ['inspeccionMotoGallery2',  'inspeccionMotoPreview',  (d) => { inspeccionMotoFoto = d; }],
-    ['inspeccionRetroGallery2', 'inspeccionRetroPreview', (d) => { inspeccionRetroFoto = d; }],
-    ['inspeccionLlantasGallery2','inspeccionLlantasPreview',(d) => { inspeccionLlantasFoto = d; }],
-    ['inspeccionLucesDBGallery2','inspeccionLucesDBPreview',(d) => { inspeccionLucesDBFoto = d; }],
-    ['inspeccionLucesDAGallery2','inspeccionLucesDAPreview',(d) => { inspeccionLucesDAFoto = d; }],
-    ['inspeccionLucesTFGallery2','inspeccionLucesTFPreview',(d) => { inspeccionLucesTFFoto = d; }],
-    ['inspeccionLucesTPGallery2','inspeccionLucesTPPreview',(d) => { inspeccionLucesTPFoto = d; }],
-    ['gastosFacturaGallery2',   'gastosFacturaPreview',   (d) => { gastosFacturaFoto = d; }],
-    ['cascoCascoGallery2',      'cascoCascoPreview',      (d) => { cascoCascoFoto = d; }],
-    ['cascoViseraGallery2',     'cascoViseraPreview',     (d) => { cascoViseraFoto = d; }],
-    ['cascoSeguroGallery2',     'cascoSeguroPreview',     (d) => { cascoSeguroFoto = d; }],
-].forEach(([galleryId, previewId, setter]) => {
-    document.getElementById(galleryId).addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file && file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                setter(ev.target.result);
-                document.getElementById(previewId).innerHTML = `<img src="${ev.target.result}" alt="Foto">`;
-            };
-            reader.readAsDataURL(file);
-        }
+const _galeriasMotoRegistradas = new Set();
+function registrarGaleriasMoto() {
+    const configs = [
+        ['viajeTableroGallery',     'viajeTableroPreview',    (d) => { viajeTableroFoto = d; }],
+        ['viajeKmInicialGallery',   'viajeKmInicialPreview',  (d) => { viajeKmInicialFoto = d; }],
+        ['viajeKmFinalGallery',     'viajeKmFinalPreview',    (d) => { viajeKmFinalFoto = d; }],
+        ['viajeKmFinalTardeGallery','viajeKmFinalTardePreview',(d) => { viajeKmFinalTardeFoto = d; }],
+        ['viajeTableroTardeGallery','viajeTableroTardePreview',(d) => { viajeTableroTardeFoto = d; }],
+        ['inspeccionMotoGallery',   'inspeccionMotoPreview',  (d) => { inspeccionMotoFoto = d; }],
+        ['inspeccionRetroGallery',  'inspeccionRetroPreview', (d) => { inspeccionRetroFoto = d; }],
+        ['inspeccionLlantasGallery','inspeccionLlantasPreview',(d) => { inspeccionLlantasFoto = d; }],
+        ['inspeccionLucesDBGallery','inspeccionLucesDBPreview',(d) => { inspeccionLucesDBFoto = d; }],
+        ['inspeccionLucesDAGallery','inspeccionLucesDAPreview',(d) => { inspeccionLucesDAFoto = d; }],
+        ['inspeccionLucesTFGallery','inspeccionLucesTFPreview',(d) => { inspeccionLucesTFFoto = d; }],
+        ['inspeccionLucesTPGallery','inspeccionLucesTPPreview',(d) => { inspeccionLucesTPFoto = d; }],
+        ['gastosFacturaGallery',    'gastosFacturaPreview',   (d) => { gastosFacturaFoto = d; }],
+        ['cascoCascoGallery',       'cascoCascoPreview',      (d) => { cascoCascoFoto = d; }],
+        ['cascoViseraGallery',      'cascoViseraPreview',     (d) => { cascoViseraFoto = d; }],
+        ['cascoSeguroGallery',      'cascoSeguroPreview',     (d) => { cascoSeguroFoto = d; }],
+    ];
+    configs.forEach(([galleryId, previewId, setter]) => {
+        if (_galeriasMotoRegistradas.has(galleryId)) return;
+        const el = document.getElementById(galleryId);
+        if (!el) return;
+        el.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    setter(ev.target.result);
+                    document.getElementById(previewId).innerHTML = `<img src="${ev.target.result}" alt="Foto">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        _galeriasMotoRegistradas.add(galleryId);
     });
-});
+}
+// Registrar al cargar también
+registrarGaleriasMoto();
 
 // ---- Submit: Registro de Viaje (Km Inicial - Mañana) ----
 // ---- Registro de Viaje (Km Inicial) ----
