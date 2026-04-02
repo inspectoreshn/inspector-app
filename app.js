@@ -2463,26 +2463,24 @@ function mostrarTabMoto(tab) {
 
 // Event listeners galería moto
 [
-    ['viajeTableroGallery',    'viajeTableroPreview',    (d) => { viajeTableroFoto = d; }],
-    ['viajeKmInicialGallery',  'viajeKmInicialPreview',  (d) => { viajeKmInicialFoto = d; }],
-    ['viajeKmFinalGallery',    'viajeKmFinalPreview',    (d) => { viajeKmFinalFoto = d; }],
-    ['viajeKmFinalTardeGallery','viajeKmFinalTardePreview',(d) => { viajeKmFinalTardeFoto = d; }],
-    ['viajeTableroTardeGallery','viajeTableroTardePreview',(d) => { viajeTableroTardeFoto = d; }],
-    ['inspeccionMotoGallery',  'inspeccionMotoPreview',  (d) => { inspeccionMotoFoto = d; }],
-    ['inspeccionRetroGallery', 'inspeccionRetroPreview', (d) => { inspeccionRetroFoto = d; }],
-    ['inspeccionLlantasGallery', 'inspeccionLlantasPreview', (d) => { inspeccionLlantasFoto = d; }],
-    ['inspeccionLucesDBGallery', 'inspeccionLucesDBPreview', (d) => { inspeccionLucesDBFoto = d; }],
-    ['inspeccionLucesDAGallery', 'inspeccionLucesDAPreview', (d) => { inspeccionLucesDAFoto = d; }],
-    ['inspeccionLucesTFGallery', 'inspeccionLucesTFPreview', (d) => { inspeccionLucesTFFoto = d; }],
-    ['inspeccionLucesTPGallery', 'inspeccionLucesTPPreview', (d) => { inspeccionLucesTPFoto = d; }],
-    ['gastosFacturaGallery',   'gastosFacturaPreview',   (d) => { gastosFacturaFoto = d; }],
-    ['cascoCascoGallery',      'cascoCascoPreview',      (d) => { cascoCascoFoto = d; }],
-    ['cascoViseraGallery',     'cascoViseraPreview',     (d) => { cascoViseraFoto = d; }],
-    ['cascoSeguroGallery',     'cascoSeguroPreview',     (d) => { cascoSeguroFoto = d; }],
+    ['viajeTableroGallery',     'viajeTableroPreview',    (d) => { viajeTableroFoto = d; }],
+    ['viajeKmInicialGallery2',  'viajeKmInicialPreview',  (d) => { viajeKmInicialFoto = d; }],
+    ['viajeKmFinalGallery',     'viajeKmFinalPreview',    (d) => { viajeKmFinalFoto = d; }],
+    ['viajeKmFinalTardeGallery2','viajeKmFinalTardePreview',(d) => { viajeKmFinalTardeFoto = d; }],
+    ['viajeTableroTardeGallery2','viajeTableroTardePreview',(d) => { viajeTableroTardeFoto = d; }],
+    ['inspeccionMotoGallery2',  'inspeccionMotoPreview',  (d) => { inspeccionMotoFoto = d; }],
+    ['inspeccionRetroGallery2', 'inspeccionRetroPreview', (d) => { inspeccionRetroFoto = d; }],
+    ['inspeccionLlantasGallery2','inspeccionLlantasPreview',(d) => { inspeccionLlantasFoto = d; }],
+    ['inspeccionLucesDBGallery2','inspeccionLucesDBPreview',(d) => { inspeccionLucesDBFoto = d; }],
+    ['inspeccionLucesDAGallery2','inspeccionLucesDAPreview',(d) => { inspeccionLucesDAFoto = d; }],
+    ['inspeccionLucesTFGallery2','inspeccionLucesTFPreview',(d) => { inspeccionLucesTFFoto = d; }],
+    ['inspeccionLucesTPGallery2','inspeccionLucesTPPreview',(d) => { inspeccionLucesTPFoto = d; }],
+    ['gastosFacturaGallery2',   'gastosFacturaPreview',   (d) => { gastosFacturaFoto = d; }],
+    ['cascoCascoGallery2',      'cascoCascoPreview',      (d) => { cascoCascoFoto = d; }],
+    ['cascoViseraGallery2',     'cascoViseraPreview',     (d) => { cascoViseraFoto = d; }],
+    ['cascoSeguroGallery2',     'cascoSeguroPreview',     (d) => { cascoSeguroFoto = d; }],
 ].forEach(([galleryId, previewId, setter]) => {
-    // Usar delegación en document para manejar elementos en tabs ocultos
-    document.addEventListener('change', (e) => {
-        if (e.target.id !== galleryId) return;
+    document.getElementById(galleryId).addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file && file.type.startsWith('image/')) {
             const reader = new FileReader();
