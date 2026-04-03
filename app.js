@@ -3385,7 +3385,8 @@ function renderDashboard(reportes) {
         try {
         const modulo    = r['Módulo'] || r['Modulo'] || 'Reporte';
         const inspector = r['Inspector'] || r['Usuario'] || '—';
-        const fecha     = r['Fecha'] || '';
+        const fechaRaw  = r['Fecha'] || r['Fecha Registro'] || '';
+        const fecha     = fechaRaw ? fechaRaw.toString().replace('T', ' ').replace(/\.\d+Z$/, '').split(' ')[0] : '';
         const fechaReg  = r['Fecha Registro'] || '';
         const id        = r['ID'] || idx;
         const badgeClass = getBadgeClass(modulo);
