@@ -3258,7 +3258,6 @@ function limpiarFiltros() {
     document.getElementById('filtroModulo').value = '';
     document.getElementById('filtroInspector').value = '';
     document.getElementById('filtroFecha').value = '';
-    document.getElementById('filtroTexto').value = '';
     aplicarFiltros();
 }
 
@@ -3315,7 +3314,7 @@ function aplicarFiltros() {
     const modulo    = document.getElementById('filtroModulo').value.toLowerCase();
     const inspector = document.getElementById('filtroInspector').value.toLowerCase();
     const fecha     = document.getElementById('filtroFecha').value;
-    const texto     = (document.getElementById('filtroTexto').value || '').toLowerCase();
+    const texto     = '';
 
     let filtrados = _todosLosReportes.filter(r => {
         const mod  = (r['Módulo'] || r['Modulo'] || '').toLowerCase();
