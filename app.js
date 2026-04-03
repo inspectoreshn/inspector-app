@@ -3978,10 +3978,12 @@ function guardarCharla() {
 
     const charlas = JSON.parse(localStorage.getItem(CHARLA_KEY) || '[]');
     charlas.unshift({ id: Date.now(), fecha, hora, sede, tema, lat: lat||null, lng: lng||null, foto1: charlaFoto1, foto2: charlaFoto2 });
-    if (charlas.length > 100) charlas.splice(100);
-    // Guardar sin fotos para no saturar localStorage
-    const charlasSinFotos = charlas.map(c => ({ ...c, foto1: c.foto1 ? '[foto]' : null, foto2: c.foto2 ? '[foto]' : null }));
-    localStorage.setItem(CHARLA_KEY, JSON.stringify(charlasSinFotos));
+    if (charlas.length > 50) charlas.splice(50);
+    try { localStorage.setItem(CHARLA_KEY, JSON.stringify(charlas)); } catch(e) {
+        // Si no cabe con fotos, guardar sin fotos
+        const sinFotos = charlas.map(c => ({ ...c, foto1: null, foto2: null }));
+        localStorage.setItem(CHARLA_KEY, JSON.stringify(sinFotos));
+    }
 
     // Enviar al GAS en segundo plano
     fetch(GAS_URL_FIJA, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' },
@@ -4005,9 +4007,17 @@ function guardarCharla() {
 
 async function verHistorialCharla() {
     const histDiv = document.getElementById('historialCharla');
-    histDiv.innerHTML = '<p style="color:var(--gray-500);text-align:center;padding:16px;">Cargando...</p>';
     histDiv.style.display = 'block';
 
+    // Primero mostrar desde localStorage (tiene fotos)
+    const local = JSON.parse(localStorage.getItem(CHARLA_KEY) || '[]');
+    if (local.length > 0) {
+        renderHistorialCharlaLocal(local, histDiv);
+        return;
+    }
+
+    // Si no hay local, cargar desde GAS
+    histDiv.innerHTML = '<p style="color:var(--gray-500);text-align:center;padding:16px;">Cargando...</p>';
     try {
         const res = await fetch(GAS_URL_FIJA, {
             method: 'POST', redirect: 'follow',
@@ -4016,31 +4026,35 @@ async function verHistorialCharla() {
         });
         const data = await res.json();
         const charlas = data.datos || [];
-
         if (charlas.length === 0) {
             histDiv.innerHTML = '<p style="color:var(--gray-500);text-align:center;padding:16px;">No hay charlas registradas.</p>';
             return;
         }
-
-        histDiv.innerHTML = charlas.map((c, i) => `
-            <div style="background:#0d1424;border:1px solid #1a2e50;border-radius:10px;padding:12px;margin-bottom:8px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleHistorialDia('hcharla_${i}')">
-                    <div>
-                        <strong style="color:var(--gray-800);font-size:14px;">${c.Sede || c.sede || ''}</strong>
-                        <span style="font-size:12px;color:var(--gray-500);margin-left:8px;">${c.Fecha || c.fecha || ''} ${c.Hora || c.hora || ''}</span>
-                    </div>
-                    <span style="color:var(--primary);font-size:12px;">Ver</span>
-                </div>
-                <div id="hcharla_${i}" style="display:none;margin-top:10px;">
-                    <p style="color:var(--gray-600);font-size:13px;margin-bottom:8px;"><strong>Tema:</strong> ${c.Tema || c.tema || ''}</p>
-                    ${(c.Latitud || c.lat) ? `<a href="https://www.google.com/maps?q=${c.Latitud||c.lat},${c.Longitud||c.lng}" target="_blank" style="color:var(--primary);font-size:12px;">Ver en Google Maps</a>` : ''}
-                    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-                        ${c.Foto1 && c.Foto1 !== '' ? `<img src="${c.Foto1}" style="max-width:48%;border-radius:8px;" onerror="this.style.display='none'">` : ''}
-                        ${c.Foto2 && c.Foto2 !== '' ? `<img src="${c.Foto2}" style="max-width:48%;border-radius:8px;" onerror="this.style.display='none'">` : ''}
-                    </div>
-                </div>
-            </div>`).join('');
+        // Mapear campos del GAS al formato local
+        const mapeadas = charlas.map(c => ({ sede: c.Sede, fecha: c.Fecha, hora: c.Hora, tema: c.Tema, lat: c.Latitud, lng: c.Longitud, foto1: null, foto2: null }));
+        renderHistorialCharlaLocal(mapeadas, histDiv);
     } catch(err) {
-        histDiv.innerHTML = `<p style="color:#ef4444;text-align:center;padding:16px;">Error al cargar: ${err.message}</p>`;
+        histDiv.innerHTML = `<p style="color:#ef4444;text-align:center;padding:16px;">Error: ${err.message}</p>`;
     }
+}
+
+function renderHistorialCharlaLocal(charlas, histDiv) {
+    histDiv.innerHTML = charlas.map((c, i) => `
+        <div style="background:#0d1424;border:1px solid #1a2e50;border-radius:10px;padding:12px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleHistorialDia('hcharla_${i}')">
+                <div>
+                    <strong style="color:var(--gray-800);font-size:14px;">${c.sede||''}</strong>
+                    <span style="font-size:12px;color:var(--gray-500);margin-left:8px;">${c.fecha||''} ${c.hora||''}</span>
+                </div>
+                <span style="color:var(--primary);font-size:12px;">Ver</span>
+            </div>
+            <div id="hcharla_${i}" style="display:none;margin-top:10px;">
+                <p style="color:var(--gray-600);font-size:13px;margin-bottom:8px;"><strong>Tema:</strong> ${c.tema||''}</p>
+                ${c.lat ? `<a href="https://www.google.com/maps?q=${c.lat},${c.lng}" target="_blank" style="color:var(--primary);font-size:12px;">Ver en Google Maps</a>` : ''}
+                <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                    ${c.foto1 ? `<img src="${c.foto1}" style="max-width:48%;border-radius:8px;">` : ''}
+                    ${c.foto2 ? `<img src="${c.foto2}" style="max-width:48%;border-radius:8px;">` : ''}
+                </div>
+            </div>
+        </div>`).join('');
 }
