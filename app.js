@@ -18,7 +18,7 @@ var CAMPOS_FULL = ['Observaciones', 'Google Maps'];
 var _todosLosReportes = [];
 
 // URL del Google Apps Script — fija en el código
-const GAS_URL_FIJA = 'https://script.google.com/macros/s/AKfycbw2-pOsnakgK7m-eYTG3PS7-rh8N3AYxKZrFG4d7YFQzkZAUY9oFpezCfICI7vJmjRelg/exec';
+const GAS_URL_FIJA = 'https://script.google.com/macros/s/AKfycbyWAuaEAHIJGgAWkAAR0V6nVB929xKuSHaVKjtNQhRbdJnL_W5RWyvLU0IpZ6TxIko8Zg/exec';
 
 function getScriptURL() {
   // Llamada directa al Google Apps Script (sin proxy)
@@ -3648,45 +3648,94 @@ function guardarAsistencia() {
     renderAsistencia();
 }
 
-function verHistorialAsistencia() {
-    const guardado = JSON.parse(localStorage.getItem(ASISTENCIA_KEY) || '{}');
-    const fechas = Object.keys(guardado).sort().reverse();
+async function verHistorialAsistencia() {
     const histDiv = document.getElementById('historialAsistencia');
-
-    if (fechas.length === 0) {
-        histDiv.innerHTML = '<p style="color:var(--gray-500);text-align:center;padding:16px;">No hay registros de asistencia.</p>';
-        histDiv.style.display = 'block';
-        return;
-    }
-
-    histDiv.innerHTML = fechas.map(fecha => {
-        const dia = guardado[fecha];
-        const presentes = Object.values(dia).filter(v => v.presente === true).length;
-        const ausentes  = Object.values(dia).filter(v => v.presente === false).length;
-        const total = Object.keys(dia).length;
-        return `
-        <div style="background:#0d1424;border:1px solid #1a2e50;border-radius:10px;padding:12px;margin-bottom:8px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleHistorialDia('hdia_${fecha}')">
-                <strong style="color:var(--gray-800);">${fecha}</strong>
-                <span style="font-size:12px;color:var(--gray-500);">
-                    <span style="color:#22c55e;">${presentes} presentes</span> · 
-                    <span style="color:#ef4444;">${ausentes} ausentes</span> · 
-                    ${total} marcados
-                </span>
-            </div>
-            <div id="hdia_${fecha}" style="display:none;margin-top:10px;">
-                ${Object.entries(dia).map(([nombre, est]) => `
-                <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1a2e50;font-size:13px;">
-                    <span style="color:var(--gray-700);">${nombre}</span>
-                    <span style="color:${est.presente ? '#22c55e' : '#ef4444'};font-weight:600;">
-                        ${est.presente ? 'Presente' : (est.razon || 'Ausente')}
-                    </span>
-                </div>`).join('')}
-            </div>
-        </div>`;
-    }).join('');
+    histDiv.innerHTML = '<p style="color:var(--gray-500);text-align:center;padding:16px;">Cargando...</p>';
     histDiv.style.display = 'block';
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    try {
+        const res = await fetch(GAS_URL_FIJA, {
+            method: 'POST', redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ accion: 'obtenerAsistencia' })
+        });
+        const data = await res.json();
+        const registros = data.datos || [];
+
+        if (registros.length === 0) {
+            histDiv.innerHTML = '<p style="color:var(--gray-500);text-align:center;padding:16px;">No hay registros de asistencia.</p>';
+            return;
+        }
+
+        // Agrupar por fecha
+        const porFecha = {};
+        registros.forEach(r => {
+            const fecha = r.Fecha || '';
+            if (!porFecha[fecha]) porFecha[fecha] = [];
+            porFecha[fecha].push(r);
+        });
+
+        const fechas = Object.keys(porFecha).sort().reverse();
+        histDiv.innerHTML = fechas.map(fecha => {
+            const dia = porFecha[fecha];
+            const presentes = dia.filter(r => r.Estado === 'Presente').length;
+            const ausentes  = dia.filter(r => r.Estado === 'Ausente').length;
+            return `
+            <div style="background:#0d1424;border:1px solid #1a2e50;border-radius:10px;padding:12px;margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleHistorialDia('hdia_${fecha}')">
+                    <strong style="color:var(--gray-800);">${fecha}</strong>
+                    <span style="font-size:12px;color:var(--gray-500);">
+                        <span style="color:#22c55e;">${presentes} presentes</span> · 
+                        <span style="color:#ef4444;">${ausentes} ausentes</span>
+                    </span>
+                </div>
+                <div id="hdia_${fecha}" style="display:none;margin-top:10px;">
+                    ${dia.map(r => `
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1a2e50;font-size:13px;">
+                        <span style="color:var(--gray-700);">${r.Inspector||''}</span>
+                        <span style="color:${r.Estado==='Presente'?'#22c55e':'#ef4444'};font-weight:600;">
+                            ${r.Estado||''}${r.Motivo ? ` — ${r.Motivo}` : ''}
+                        </span>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        }).join('');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    } catch(err) {
+        // Fallback a localStorage si no hay internet
+        const guardado = JSON.parse(localStorage.getItem(ASISTENCIA_KEY) || '{}');
+        const fechas = Object.keys(guardado).sort().reverse();
+        if (fechas.length === 0) {
+            histDiv.innerHTML = '<p style="color:var(--gray-500);text-align:center;padding:16px;">No hay registros de asistencia.</p>';
+            return;
+        }
+        histDiv.innerHTML = fechas.map(fecha => {
+            const dia = guardado[fecha];
+            const presentes = Object.values(dia).filter(v => v.presente === true).length;
+            const ausentes  = Object.values(dia).filter(v => v.presente === false).length;
+            return `
+            <div style="background:#0d1424;border:1px solid #1a2e50;border-radius:10px;padding:12px;margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleHistorialDia('hdia_${fecha}')">
+                    <strong style="color:var(--gray-800);">${fecha}</strong>
+                    <span style="font-size:12px;color:var(--gray-500);">
+                        <span style="color:#22c55e;">${presentes} presentes</span> · 
+                        <span style="color:#ef4444;">${ausentes} ausentes</span>
+                    </span>
+                </div>
+                <div id="hdia_${fecha}" style="display:none;margin-top:10px;">
+                    ${Object.entries(dia).map(([nombre, est]) => `
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1a2e50;font-size:13px;">
+                        <span style="color:var(--gray-700);">${nombre}</span>
+                        <span style="color:${est.presente?'#22c55e':'#ef4444'};font-weight:600;">
+                            ${est.presente ? 'Presente' : (est.razon || 'Ausente')}
+                        </span>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        }).join('');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
 }
 
 function toggleHistorialDia(id) {
@@ -3843,7 +3892,7 @@ function guardarDotacion() {
         Binocular: d.binocular !== undefined ? (d.binocular ? 'Si' : 'No') : '',
         Observaciones: DOTACION_ITEMS.filter(it => d[it.id] === false && d[it.id+'_obs']).map(it => `${it.label}: ${d[it.id+'_obs']}`).join(' | '),
     };
-    if (dotacionFotoData) payload.Foto_URL = dotacionFotoData;
+    if (dotacionFotoData) payload.Foto_Inspector = dotacionFotoData;
     fetch(GAS_URL_FIJA, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload) }).catch(() => {});
 
@@ -3853,45 +3902,84 @@ function guardarDotacion() {
     document.getElementById('dotacionForm').innerHTML = '<p style="color:var(--gray-500);text-align:center;padding:16px;">Selecciona un inspector para continuar.</p>';
 }
 
-function verHistorialDotacion() {
-    const guardado = JSON.parse(localStorage.getItem(DOTACION_KEY) || '{}');
+async function verHistorialDotacion() {
     const histDiv = document.getElementById('historialDotacion');
-    if (Object.keys(guardado).length === 0) {
-        histDiv.innerHTML = '<p style="color:var(--gray-500);text-align:center;padding:16px;">No hay registros de dotación.</p>';
-        histDiv.style.display = 'block';
-        return;
-    }
-
-    const registros = Object.values(guardado).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-    histDiv.innerHTML = registros.map((r, i) => {
-        const ok = DOTACION_ITEMS.filter(it => r[it.id] === true).length;
-        const no = DOTACION_ITEMS.filter(it => r[it.id] === false).length;
-        return `
-        <div style="background:#0d1424;border:1px solid #1a2e50;border-radius:10px;padding:12px;margin-bottom:8px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleHistorialDia('hdot_${i}')">
-                <div>
-                    <strong style="color:var(--gray-800);">${r.inspector || '—'}</strong>
-                    <span style="font-size:12px;color:var(--gray-500);margin-left:8px;">${r.fecha || ''}</span>
-                </div>
-                <span style="font-size:12px;">
-                    <span style="color:#22c55e;">${ok} ok</span> · <span style="color:#ef4444;">${no} no</span>
-                </span>
-            </div>
-            <div id="hdot_${i}" style="display:none;margin-top:10px;">
-                ${r.foto ? `<img src="${r.foto}" style="max-width:100%;border-radius:8px;max-height:150px;margin-bottom:8px;">` : ''}
-                ${DOTACION_ITEMS.map(it => r[it.id] !== undefined ? `
-                <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1a2e50;font-size:13px;">
-                    <span style="color:var(--gray-600);">${it.label}</span>
-                    <span style="color:${r[it.id] ? '#22c55e' : '#ef4444'};font-weight:600;">
-                        ${r[it.id] ? 'Si' : 'No'}${r[it.id + '_obs'] ? ` — ${r[it.id + '_obs']}` : ''}
-                    </span>
-                </div>` : '').join('')}
-            </div>
-        </div>`;
-    }).join('');
+    histDiv.innerHTML = '<p style="color:var(--gray-500);text-align:center;padding:16px;">Cargando...</p>';
     histDiv.style.display = 'block';
-}
 
+    try {
+        const res = await fetch(GAS_URL_FIJA, {
+            method: 'POST', redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ accion: 'obtenerDotacion' })
+        });
+        const data = await res.json();
+        const registros = data.datos || [];
+
+        if (registros.length === 0) {
+            histDiv.innerHTML = '<p style="color:var(--gray-500);text-align:center;padding:16px;">No hay registros de dotación.</p>';
+            return;
+        }
+
+        // Agrupar por inspector+fecha (puede haber duplicados)
+        const vistos = new Set();
+        const unicos = registros.filter(r => {
+            const k = `${r.Inspector}_${r.Fecha}`;
+            if (vistos.has(k)) return false;
+            vistos.add(k); return true;
+        });
+
+        histDiv.innerHTML = unicos.map((r, i) => {
+            const items = DOTACION_ITEMS.map(it => {
+                const val = r[it.label] || r[it.id] || r[it.id.charAt(0).toUpperCase()+it.id.slice(1)] || '';
+                if (!val) return '';
+                return `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1a2e50;font-size:13px;">
+                    <span style="color:var(--gray-600);">${it.label}</span>
+                    <span style="color:${val==='Si'?'#22c55e':'#ef4444'};font-weight:600;">${val}</span>
+                </div>`;
+            }).join('');
+
+            return `
+            <div style="background:#0d1424;border:1px solid #1a2e50;border-radius:10px;padding:12px;margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleHistorialDia('hdot_${i}')">
+                    <div>
+                        <strong style="color:var(--gray-800);">${r.Inspector||''}</strong>
+                        <span style="font-size:12px;color:var(--gray-500);margin-left:8px;">${r.Fecha||''}</span>
+                    </div>
+                    <span style="color:var(--primary);font-size:12px;">Ver</span>
+                </div>
+                <div id="hdot_${i}" style="display:none;margin-top:10px;">
+                    <p style="font-size:12px;color:var(--gray-500);margin-bottom:8px;">${r.Sede||''}</p>
+                    ${items}
+                    ${r.Observaciones ? `<p style="font-size:12px;color:#f59e0b;margin-top:8px;">${r.Observaciones}</p>` : ''}
+                    ${r.Foto_URL && r.Foto_URL !== '' ? `<img src="${r.Foto_URL}" style="max-width:100%;border-radius:8px;max-height:200px;margin-top:8px;" onerror="this.style.display='none'">` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    } catch(err) {
+        // Fallback a localStorage si no hay internet
+        const guardado = JSON.parse(localStorage.getItem(DOTACION_KEY) || '{}');
+        const registros = Object.values(guardado).sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+        if (registros.length === 0) {
+            histDiv.innerHTML = '<p style="color:var(--gray-500);text-align:center;padding:16px;">No hay registros de dotación.</p>';
+            return;
+        }
+        histDiv.innerHTML = registros.map((r, i) => `
+            <div style="background:#0d1424;border:1px solid #1a2e50;border-radius:10px;padding:12px;margin-bottom:8px;">
+                <div style="cursor:pointer;" onclick="toggleHistorialDia('hdot_${i}')">
+                    <strong style="color:var(--gray-800);">${r.inspector||''}</strong>
+                    <span style="font-size:12px;color:var(--gray-500);margin-left:8px;">${r.fecha||''}</span>
+                </div>
+                <div id="hdot_${i}" style="display:none;margin-top:10px;">
+                    ${DOTACION_ITEMS.map(it => r[it.id]!==undefined ? `
+                    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1a2e50;font-size:13px;">
+                        <span style="color:var(--gray-600);">${it.label}</span>
+                        <span style="color:${r[it.id]?'#22c55e':'#ef4444'};font-weight:600;">${r[it.id]?'Si':'No'}</span>
+                    </div>` : '').join('')}
+                </div>
+            </div>`).join('');
+    }
+}
 // Foto dotación
 document.addEventListener('change', (e) => {
     if (e.target.id !== 'dotacionFotoGallery2') return;
