@@ -3291,6 +3291,11 @@ async function cargarReportesSupervisor() {
         if (!data.success) throw new Error(data.error || 'Error desconocido');
 
         _todosLosReportes = data.reportes || [];
+        // Filtrar reportes eliminados previamente
+        const eliminados = new Set(JSON.parse(localStorage.getItem('reportes_eliminados') || '[]'));
+        if (eliminados.size > 0) {
+            _todosLosReportes = _todosLosReportes.filter(r => !eliminados.has(String(r['ID'] || r['id'] || '')));
+        }
         poblarFiltroInspectores(_todosLosReportes);
         actualizarStats(_todosLosReportes);
         try {
@@ -3431,14 +3436,27 @@ function toggleReporte(id) {
 }
 
 function eliminarReporte(idx) {
+    const reporte = _todosLosReportes[idx];
+    if (reporte) {
+        // Guardar ID eliminado para que no vuelva al actualizar
+        const eliminados = JSON.parse(localStorage.getItem('reportes_eliminados') || '[]');
+        eliminados.push(String(reporte['ID'] || reporte['id'] || ''));
+        localStorage.setItem('reportes_eliminados', JSON.stringify(eliminados));
+    }
     _todosLosReportes.splice(idx, 1);
     aplicarFiltros();
+    actualizarStats(_todosLosReportes);
 }
 
 function eliminarTodosReportes() {
     if (!confirm('¿Eliminar todos los reportes de la vista?')) return;
+    // Guardar todos los IDs como eliminados
+    const eliminados = JSON.parse(localStorage.getItem('reportes_eliminados') || '[]');
+    _todosLosReportes.forEach(r => eliminados.push(String(r['ID'] || r['id'] || '')));
+    localStorage.setItem('reportes_eliminados', JSON.stringify(eliminados));
     _todosLosReportes = [];
     aplicarFiltros();
+    actualizarStats([]);
 }
 
 // Columnas supervisor — declaradas al inicio del archivo
