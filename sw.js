@@ -25,24 +25,37 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Responder con cache primero, luego red
+// Estrategia: network-first para archivos propios, cache-first para externos
 self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(res => {
-        // Solo cachear respuestas válidas de nuestros propios archivos
-        if (res && res.status === 200 && e.request.url.includes(self.location.origin)) {
+  const url = new URL(e.request.url);
+  const isOwn = url.origin === self.location.origin;
+
+  if (isOwn) {
+    // Network-first: intenta red, si falla usa cache
+    e.respondWith(
+      fetch(e.request).then(res => {
+        if (res && res.status === 200) {
           const clone = res.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
         }
         return res;
-      }).catch(() => {
-        // Sin red y sin cache — retornar página principal como fallback
-        if (e.request.destination === 'document') {
-          return caches.match('./index.html');
-        }
-      });
-    })
-  );
+      }).catch(() => caches.match(e.request).then(cached => {
+        return cached || caches.match('./index.html');
+      }))
+    );
+  } else {
+    // Cache-first para librerías externas (jsPDF, Lucide)
+    e.respondWith(
+      caches.match(e.request).then(cached => {
+        if (cached) return cached;
+        return fetch(e.request).then(res => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+          }
+          return res;
+        });
+      })
+    );
+  }
 });

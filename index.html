@@ -1021,12 +1021,31 @@
     <script src="app.js"></script>
     <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js')
-          .then(() => console.log('✅ Service Worker registrado'))
-          .catch(e => console.log('SW error:', e));
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'activated') {
+                window.location.reload();
+              }
+            });
+          });
+        }).catch(e => console.log('SW no disponible:', e));
+
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          window.location.reload();
+        });
       }
-      // Inicializar iconos Lucide
-      document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
+      // Inicializar iconos Lucide — con fallback si no carga
+      function initLucide() {
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        } else {
+          // Reintentar en 500ms si Lucide no cargó aún
+          setTimeout(initLucide, 500);
+        }
+      }
+      document.addEventListener('DOMContentLoaded', initLucide);
     </script>
 </body>
 </html>

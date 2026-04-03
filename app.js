@@ -425,22 +425,35 @@ function iniciarCamara() {
         cameraStream.getTracks().forEach(track => track.stop());
         cameraStream = null;
     }
-    // Intentar con facingMode exact, si falla usar sin restricción
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Tu navegador no soporta la cámara. Usa la opción Galería para seleccionar fotos.');
+        closeCamera();
+        return;
+    }
+
     navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: camaraActual } } })
         .then(stream => {
             cameraStream = stream;
             cameraVideo.srcObject = stream;
         })
         .catch(() => {
-            // Fallback: sin exact (algunos móviles no soportan exact)
             navigator.mediaDevices.getUserMedia({ video: { facingMode: camaraActual } })
                 .then(stream => {
                     cameraStream = stream;
                     cameraVideo.srcObject = stream;
                 })
-                .catch(error => {
-                    alert('No se pudo acceder a la cámara: ' + error.message);
-                    closeCamera();
+                .catch(() => {
+                    // Último fallback: cualquier cámara disponible
+                    navigator.mediaDevices.getUserMedia({ video: true })
+                        .then(stream => {
+                            cameraStream = stream;
+                            cameraVideo.srcObject = stream;
+                        })
+                        .catch(error => {
+                            alert('No se pudo acceder a la cámara. Usa la opción Galería.');
+                            closeCamera();
+                        });
                 });
         });
 }
