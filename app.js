@@ -18,7 +18,7 @@ var CAMPOS_FULL = ['Observaciones', 'Google Maps'];
 var _todosLosReportes = [];
 
 // URL del Google Apps Script — fija en el código
-const GAS_URL_FIJA = 'https://script.google.com/macros/s/AKfycbxrNXkFEwmGaLtMYsb_dhrDNH3yZ1ZvDORwcFCz6FlAS7c2ETFRH0ay2YeddDxW7pqj1Q/exec';
+const GAS_URL_FIJA = 'https://script.google.com/macros/s/AKfycbw2-pOsnakgK7m-eYTG3PS7-rh8N3AYxKZrFG4d7YFQzkZAUY9oFpezCfICI7vJmjRelg/exec';
 
 function getScriptURL() {
   // Llamada directa al Google Apps Script (sin proxy)
@@ -564,6 +564,12 @@ function capturePhoto() {
         dotacionFotoData = photoData;
         const prev = document.getElementById('dotacionFotoPreview');
         if (prev) prev.innerHTML = `<img src="${photoData}" style="max-width:100%;border-radius:8px;max-height:200px;">`;
+    } else if (currentPhotoType === 'charlaFoto1') {
+        charlaFoto1 = photoData;
+        document.getElementById('charlaFoto1Preview').innerHTML = `<img src="${photoData}" alt="Foto 1">`;
+    } else if (currentPhotoType === 'charlaFoto2') {
+        charlaFoto2 = photoData;
+        document.getElementById('charlaFoto2Preview').innerHTML = `<img src="${photoData}" alt="Foto 2">`;
     }
     
     closeCamera();
@@ -1021,6 +1027,7 @@ function aplicarCoordsManuales(modulo) {
         'consumo':    { input: 'consumoCoordManual',     hidLat: 'consumoLat',    hidLng: 'consumoLng',    box: 'consumoCoordsBox' },
         'reubicacion':{ input: 'reubicacionCoordManual', hidLat: 'reubicacionLat',hidLng: 'reubicacionLng',box: 'reubicacionCoordsBox' },
         'postes':     { input: 'postesCoordManual',      hidLat: 'postesLat',     hidLng: 'postesLng',     box: 'postesCoordsBox' },
+        'charla':     { input: 'charlaCoordManual',      hidLat: 'charlaLat',     hidLng: 'charlaLng',     box: 'charlaCoordsBox' },
     };
     const cfg = prefijos[modulo];
     if (!cfg) return;
@@ -3533,9 +3540,11 @@ function mostrarTabSupervisor(tab) {
     document.getElementById('supTabReportes').style.display   = tab === 'reportes'   ? 'block' : 'none';
     document.getElementById('supTabAsistencia').style.display = tab === 'asistencia' ? 'block' : 'none';
     document.getElementById('supTabDotacion').style.display   = tab === 'dotacion'   ? 'block' : 'none';
+    document.getElementById('supTabCharla').style.display     = tab === 'charla'     ? 'block' : 'none';
     document.getElementById('tabSupReportes').classList.toggle('active',   tab === 'reportes');
     document.getElementById('tabSupAsistencia').classList.toggle('active', tab === 'asistencia');
     document.getElementById('tabSupDotacion').classList.toggle('active',   tab === 'dotacion');
+    document.getElementById('tabSupCharla').classList.toggle('active',     tab === 'charla');
     if (tab === 'asistencia') renderAsistencia();
     if (tab === 'dotacion') { poblarSelectDotacion(); renderDotacion(); }
     if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -3620,9 +3629,19 @@ function guardarAsistencia() {
     if (sinMarcar.length > 0) {
         if (!confirm(`Faltan ${sinMarcar.length} inspector(es) sin marcar. ¿Guardar de todas formas?`)) return;
     }
-    alert(`Asistencia del ${fecha} guardada correctamente.`);
 
-    // Avanzar al día siguiente y limpiar para nueva asistencia
+    // Enviar al GAS en segundo plano
+    const registros = inspectores.map(({ nombre, sede }) => {
+        const est = diaActual[nombre] || {};
+        return { Fecha: fecha, Inspector: nombre, Sede: sede,
+            Estado: est.presente === true ? 'Presente' : est.presente === false ? 'Ausente' : 'Sin marcar',
+            Motivo: est.razon || '',
+            Hora: new Date().toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' }) };
+    });
+    fetch(GAS_URL_FIJA, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ accion: 'guardarAsistencia', registros }) }).catch(() => {});
+
+    alert(`Asistencia del ${fecha} guardada.`);
     const siguiente = new Date(fecha + 'T12:00:00');
     siguiente.setDate(siguiente.getDate() + 1);
     document.getElementById('asistenciaFecha').value = siguiente.toISOString().split('T')[0];
@@ -3808,10 +3827,28 @@ function guardarDotacion() {
     guardado[key].fecha = fecha;
     localStorage.setItem(DOTACION_KEY, JSON.stringify(guardado));
 
+    // Enviar al GAS
+    const d = guardado[key];
+    const payload = { accion: 'guardarDotacion', Fecha: fecha, Inspector: inspector,
+        Sede: getInspectoresTodos().find(i => i.nombre === inspector)?.sede || '',
+        Camisa: d.camisa !== undefined ? (d.camisa ? 'Si' : 'No') : '',
+        Sombrero: d.sombrero !== undefined ? (d.sombrero ? 'Si' : 'No') : '',
+        Burros: d.burros !== undefined ? (d.burros ? 'Si' : 'No') : '',
+        Pantalon: d.pantalon !== undefined ? (d.pantalon ? 'Si' : 'No') : '',
+        Termico: d.termico !== undefined ? (d.termico ? 'Si' : 'No') : '',
+        Carnet: d.carnet !== undefined ? (d.carnet ? 'Si' : 'No') : '',
+        Licencia: d.licencia !== undefined ? (d.licencia ? 'Si' : 'No') : '',
+        Revision: d.revision !== undefined ? (d.revision ? 'Si' : 'No') : '',
+        Volantes: d.volantes !== undefined ? (d.volantes ? 'Si' : 'No') : '',
+        Binocular: d.binocular !== undefined ? (d.binocular ? 'Si' : 'No') : '',
+        Observaciones: DOTACION_ITEMS.filter(it => d[it.id] === false && d[it.id+'_obs']).map(it => `${it.label}: ${d[it.id+'_obs']}`).join(' | '),
+    };
+    if (dotacionFotoData) payload.Foto_URL = dotacionFotoData;
+    fetch(GAS_URL_FIJA, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload) }).catch(() => {});
+
     alert(`Dotación de ${inspector} guardada para el ${fecha}.`);
-    // Limpiar para nueva inspección
-    dotacionFotoData = null;
-    _dotacionTemp = {};
+    dotacionFotoData = null; _dotacionTemp = {};
     document.getElementById('dotacionInspector').value = '';
     document.getElementById('dotacionForm').innerHTML = '<p style="color:var(--gray-500);text-align:center;padding:16px;">Selecciona un inspector para continuar.</p>';
 }
@@ -3869,3 +3906,125 @@ document.addEventListener('change', (e) => {
         reader.readAsDataURL(file);
     }
 });
+
+// ==================== CHARLA PREOPERATIVA ====================
+
+const CHARLA_KEY = 'charlas_preoperativas';
+let charlaFoto1 = null;
+let charlaFoto2 = null;
+
+// Fotos charla en capturePhoto
+// (se maneja en el bloque principal de capturePhoto via currentPhotoType)
+
+// Galería charla
+document.getElementById('charlaFoto1Gallery').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            charlaFoto1 = ev.target.result;
+            document.getElementById('charlaFoto1Preview').innerHTML = `<img src="${charlaFoto1}" alt="Foto 1">`;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+document.getElementById('charlaFoto2Gallery').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            charlaFoto2 = ev.target.result;
+            document.getElementById('charlaFoto2Preview').innerHTML = `<img src="${charlaFoto2}" alt="Foto 2">`;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+function obtenerCoordenadasCharla() {
+    const btn = document.querySelector('#supTabCharla .btn-coords');
+    const box = document.getElementById('charlaCoordsBox');
+    if (!navigator.geolocation) { alert('Tu dispositivo no soporta geolocalización'); return; }
+    btn.textContent = 'Obteniendo...'; btn.disabled = true;
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            const lat = pos.coords.latitude.toFixed(6);
+            const lng = pos.coords.longitude.toFixed(6);
+            const hora = new Date().toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('charlaLat').value = lat;
+            document.getElementById('charlaLng').value = lng;
+            document.getElementById('charlaHora').value = hora;
+            box.innerHTML = `<p>Lat: <strong>${lat}</strong> | Lng: <strong>${lng}</strong></p>
+                <p>Hora: <strong>${hora}</strong></p>
+                <a class="map-link" href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">Ver en Google Maps</a>`;
+            box.classList.add('active');
+            btn.textContent = 'Actualizar Ubicación'; btn.disabled = false;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        },
+        () => { btn.textContent = 'Obtener Ubicación'; btn.disabled = false; }
+    );
+}
+
+function guardarCharla() {
+    const sede  = document.getElementById('charlaSede').value;
+    const tema  = document.getElementById('charlaTema').value.trim();
+    const lat   = document.getElementById('charlaLat').value;
+    const lng   = document.getElementById('charlaLng').value;
+    const hora  = document.getElementById('charlaHora').value || new Date().toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit' });
+    const fecha = new Date().toISOString().split('T')[0];
+
+    if (!sede)  { alert('Selecciona la sub-sede'); return; }
+    if (!tema)  { alert('Ingresa el tema de la charla'); return; }
+
+    const charlas = JSON.parse(localStorage.getItem(CHARLA_KEY) || '[]');
+    charlas.unshift({ id: Date.now(), fecha, hora, sede, tema, lat: lat||null, lng: lng||null, foto1: charlaFoto1, foto2: charlaFoto2 });
+    if (charlas.length > 100) charlas.splice(100);
+    // Guardar sin fotos para no saturar localStorage
+    const charlasSinFotos = charlas.map(c => ({ ...c, foto1: c.foto1 ? '[foto]' : null, foto2: c.foto2 ? '[foto]' : null }));
+    localStorage.setItem(CHARLA_KEY, JSON.stringify(charlasSinFotos));
+
+    // Enviar al GAS en segundo plano
+    fetch(GAS_URL_FIJA, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ accion: 'guardarCharla', fecha, hora: new Date().toLocaleTimeString('es-HN',{hour:'2-digit',minute:'2-digit'}),
+            sede, tema, lat: lat||'', lng: lng||'', foto1: charlaFoto1||'', foto2: charlaFoto2||'' }) }).catch(() => {});
+
+    alert(`Charla preoperativa guardada — ${sede} — ${fecha} ${hora}`);
+
+    // Limpiar
+    document.getElementById('charlaSede').value = '';
+    document.getElementById('charlaTema').value = '';
+    document.getElementById('charlaLat').value = '';
+    document.getElementById('charlaLng').value = '';
+    document.getElementById('charlaHora').value = '';
+    document.getElementById('charlaCoordsBox').innerHTML = '<p>Sin coordenadas</p>';
+    document.getElementById('charlaCoordsBox').classList.remove('active');
+    document.getElementById('charlaFoto1Preview').innerHTML = '<p>No hay foto</p>';
+    document.getElementById('charlaFoto2Preview').innerHTML = '<p>No hay foto</p>';
+    charlaFoto1 = null; charlaFoto2 = null;
+}
+
+function verHistorialCharla() {
+    const charlas = JSON.parse(localStorage.getItem(CHARLA_KEY) || '[]');
+    const histDiv = document.getElementById('historialCharla');
+    if (charlas.length === 0) {
+        histDiv.innerHTML = '<p style="color:var(--gray-500);text-align:center;padding:16px;">No hay charlas registradas.</p>';
+        histDiv.style.display = 'block';
+        return;
+    }
+    histDiv.innerHTML = charlas.map((c, i) => `
+        <div style="background:#0d1424;border:1px solid #1a2e50;border-radius:10px;padding:12px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleHistorialDia('hcharla_${i}')">
+                <div>
+                    <strong style="color:var(--gray-800);font-size:14px;">${c.sede}</strong>
+                    <span style="font-size:12px;color:var(--gray-500);margin-left:8px;">${c.fecha} ${c.hora}</span>
+                </div>
+                <span style="color:var(--primary);font-size:12px;">Ver</span>
+            </div>
+            <div id="hcharla_${i}" style="display:none;margin-top:10px;">
+                <p style="color:var(--gray-600);font-size:13px;margin-bottom:8px;"><strong>Tema:</strong> ${c.tema}</p>
+                ${c.lat ? `<p style="font-size:12px;color:var(--gray-500);">Lat: ${c.lat} | Lng: ${c.lng}</p>
+                <a href="https://www.google.com/maps?q=${c.lat},${c.lng}" target="_blank" style="color:var(--primary);font-size:12px;">Ver en Google Maps</a>` : ''}
+            </div>
+        </div>`).join('');
+    histDiv.style.display = 'block';
+}

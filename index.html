@@ -896,6 +896,9 @@
                     <button class="moto-tab btn-icon" onclick="mostrarTabSupervisor('dotacion')" id="tabSupDotacion">
                         <span class="icon"><i data-lucide="shield-check"></i></span> Dotación
                     </button>
+                    <button class="moto-tab btn-icon" onclick="mostrarTabSupervisor('charla')" id="tabSupCharla">
+                        <span class="icon"><i data-lucide="message-square"></i></span> Charla
+                    </button>
                 </div>
 
                 <!-- Tab Reportes -->
@@ -979,6 +982,82 @@
                     </div>
                     <div id="dotacionForm"></div>
                     <div id="historialDotacion" style="display:none;margin-top:16px;"></div>
+                </div>
+
+                <!-- Tab Charla Preoperativa -->
+                <div id="supTabCharla" style="display:none;">
+                    <div class="form-card" style="padding:14px;margin-bottom:12px;">
+
+                        <div class="form-group">
+                            <label style="color:var(--gray-600);font-size:13px;font-weight:600;">Sub-Sede</label>
+                            <select id="charlaSede" style="width:100%;padding:10px;border:1px solid #1a2e50;border-radius:8px;background:#0a1628;color:var(--gray-800);font-size:14px;margin-top:4px;">
+                                <option value="">-- Seleccionar sub-sede --</option>
+                                <option value="Sub-Sede La Entrada Copán">Sub-Sede La Entrada Copán</option>
+                                <option value="Sub-Sede Copán Ruinas">Sub-Sede Copán Ruinas</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-top:10px;">
+                            <label style="color:var(--gray-600);font-size:13px;font-weight:600;">Tema de la charla</label>
+                            <textarea id="charlaTema" rows="3" placeholder="Describe el tema de la charla preoperativa..."
+                                style="width:100%;padding:10px;border:1px solid #1a2e50;border-radius:8px;background:#0a1628;color:var(--gray-800);font-size:14px;margin-top:4px;resize:vertical;"></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-top:10px;">
+                            <label style="color:var(--gray-600);font-size:13px;font-weight:600;">Coordenadas y hora</label>
+                            <div class="coords-box" id="charlaCoordsBox"><p>Sin coordenadas</p></div>
+                            <button type="button" class="btn-coords btn-icon" onclick="obtenerCoordenadasCharla()" style="margin-top:6px;">
+                                <span class="icon"><i data-lucide="map-pin"></i></span> Obtener Ubicación
+                            </button>
+                            <div class="coords-manual" style="margin-top:8px;">
+                                <input type="text" id="charlaCoordManual" placeholder="Pega aquí: 14.0839, -89.2182">
+                                <button type="button" class="btn-coords-manual btn-icon" onclick="aplicarCoordsManuales('charla')">
+                                    <span class="icon"><i data-lucide="check"></i></span> Aplicar
+                                </button>
+                            </div>
+                            <input type="hidden" id="charlaLat">
+                            <input type="hidden" id="charlaLng">
+                            <input type="hidden" id="charlaHora">
+                        </div>
+
+                        <div class="form-group" style="margin-top:10px;">
+                            <label style="color:var(--gray-600);font-size:13px;font-weight:600;">Foto grupal 1</label>
+                            <div class="photo-preview" id="charlaFoto1Preview"><p>No hay foto</p></div>
+                            <div class="photo-buttons">
+                                <button type="button" class="btn-photo btn-icon" onclick="openCamera('charlaFoto1')">
+                                    <span class="icon"><i data-lucide="camera"></i></span> Tomar Foto
+                                </button>
+                                <label for="charlaFoto1Gallery" class="btn-photo btn-icon" style="cursor:pointer;">
+                                    <span class="icon"><i data-lucide="image"></i></span> Galería
+                                </label>
+                            </div>
+                            <input type="file" id="charlaFoto1Gallery" accept="image/*" style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;">
+                        </div>
+
+                        <div class="form-group" style="margin-top:10px;">
+                            <label style="color:var(--gray-600);font-size:13px;font-weight:600;">Foto grupal 2</label>
+                            <div class="photo-preview" id="charlaFoto2Preview"><p>No hay foto</p></div>
+                            <div class="photo-buttons">
+                                <button type="button" class="btn-photo btn-icon" onclick="openCamera('charlaFoto2')">
+                                    <span class="icon"><i data-lucide="camera"></i></span> Tomar Foto
+                                </button>
+                                <label for="charlaFoto2Gallery" class="btn-photo btn-icon" style="cursor:pointer;">
+                                    <span class="icon"><i data-lucide="image"></i></span> Galería
+                                </label>
+                            </div>
+                            <input type="file" id="charlaFoto2Gallery" accept="image/*" style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;">
+                        </div>
+
+                        <div style="display:flex;gap:8px;margin-top:14px;">
+                            <button onclick="verHistorialCharla()" class="btn-secondary btn-icon" style="flex:1;">
+                                <span class="icon"><i data-lucide="history"></i></span> Historial
+                            </button>
+                            <button onclick="guardarCharla()" class="btn-save btn-icon" style="flex:1;">
+                                <span class="icon"><i data-lucide="save"></i></span> Guardar
+                            </button>
+                        </div>
+                    </div>
+                    <div id="historialCharla" style="display:none;margin-top:16px;"></div>
                 </div>
 
             </div>

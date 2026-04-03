@@ -85,15 +85,45 @@ function doPost(e) {
     const raw = e.postData ? e.postData.contents : '{}';
     const datos = JSON.parse(raw);
 
-    // Si es consulta del supervisor
-    if (datos.accion === 'obtenerReportes') {
-      return responderReportes(datos);
+    // Consultas del supervisor
+    if (datos.accion === 'obtenerReportes')   return responderReportes(datos);
+    if (datos.accion === 'obtenerAsistencia') return responderHoja('Asistencia', datos);
+    if (datos.accion === 'obtenerDotacion')   return responderHoja('Dotacion', datos);
+    if (datos.accion === 'obtenerCharlas')    return responderHoja('Charlas', datos);
+
+    // Guardar asistencia
+    if (datos.accion === 'guardarAsistencia') return guardarEnHojaSimple('Asistencia', datos.registros, ['Fecha','Inspector','Sede','Estado','Motivo','Hora']);
+
+    // Guardar dotación
+    if (datos.accion === 'guardarDotacion') return guardarEnHojaSimple('Dotacion', [datos], ['Fecha','Inspector','Sede','Camisa','Sombrero','Burros','Pantalon','Termico','Carnet','Licencia','Revision','Volantes','Binocular','Observaciones','Foto_URL']);
+
+    // Guardar charla
+    if (datos.accion === 'guardarCharla') {
+      const carpeta = obtenerCarpeta(CARPETA_NOMBRE);
+      const fotos = [];
+      ['foto1','foto2'].forEach(k => {
+        if (datos[k] && datos[k].startsWith('data:image')) {
+          try {
+            const b64 = datos[k].replace(/^data:image\/\w+;base64,/, '');
+            const blob = Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg', `charla_${k}_${formatearFecha()}.jpg`);
+            const f = carpeta.createFile(blob);
+            f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+            fotos.push(`https://drive.google.com/thumbnail?id=${f.getId()}&sz=w600`);
+          } catch(err) { fotos.push(''); }
+          delete datos[k];
+        } else { fotos.push(''); }
+      });
+      return guardarEnHojaSimple('Charlas', [{
+        Fecha: datos.fecha, Hora: datos.hora, Sede: datos.sede,
+        Tema: datos.tema, Latitud: datos.lat||'', Longitud: datos.lng||'',
+        Foto1: fotos[0]||'', Foto2: fotos[1]||''
+      }], ['Fecha','Hora','Sede','Tema','Latitud','Longitud','Foto1','Foto2']);
     }
 
+    // Reporte normal de inspector
     const tipo = datos.tipo || 'Reporte';
     const carpeta = obtenerCarpeta(CARPETA_NOMBRE);
 
-    // Detectar automáticamente cualquier campo base64
     const enlacesFotos = [];
     Object.keys(datos).forEach(campo => {
       const val = datos[campo];
@@ -103,44 +133,76 @@ function doPost(e) {
           const imgBlob = Utilities.newBlob(Utilities.base64Decode(base64), 'image/jpeg', `${campo}_${formatearFecha()}.jpg`);
           const imgFile = carpeta.createFile(imgBlob);
           imgFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-          const fileId = imgFile.getId();
-          const urlVer = `https://drive.google.com/thumbnail?id=${fileId}&sz=w600`;
+          const urlVer = `https://drive.google.com/thumbnail?id=${imgFile.getId()}&sz=w600`;
           enlacesFotos.push({ label: campo.replace(/_/g, ' '), url: urlVer, base64: val });
           delete datos[campo];
-        } catch(imgErr) {
-          Logger.log('Error foto ' + campo + ': ' + imgErr.message);
-        }
+        } catch(imgErr) { Logger.log('Error foto ' + campo + ': ' + imgErr.message); }
       }
     });
 
-    // Generar PDF
     const htmlContent = generarHTML(datos, enlacesFotos);
-    const blob = Utilities.newBlob(htmlContent, 'text/html', 'temp.html');
-    const pdfBlob = blob.getAs('application/pdf');
+    const pdfBlob = Utilities.newBlob(htmlContent, 'text/html').getAs('application/pdf');
     const nombreArchivo = `${tipo}_${datos.Usuario || datos.Inspector || 'inspector'}_${formatearFecha()}.pdf`;
     pdfBlob.setName(nombreArchivo);
     const archivo = carpeta.createFile(pdfBlob);
     archivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     const enlacePDF = archivo.getUrl();
 
-    // Guardar en Google Sheets
     guardarEnSheets(datos, enlacesFotos, enlacePDF);
 
-    // Enviar correo
     const asunto = `${tipo} - ${datos.Usuario || datos.Inspector || 'Inspector'} - ${formatearFecha()}`;
-    const cuerpoHTML = generarCorreoHTML(datos, enlacePDF, nombreArchivo, enlacesFotos);
-    GmailApp.sendEmail(CORREO_DESTINO, asunto, '', { htmlBody: cuerpoHTML });
+    GmailApp.sendEmail(CORREO_DESTINO, asunto, '', { htmlBody: generarCorreoHTML(datos, enlacePDF, nombreArchivo, enlacesFotos) });
 
-    return ContentService
-      .createTextOutput(JSON.stringify({ success: true, enlace: enlacePDF }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({ success: true, enlace: enlacePDF })).setMimeType(ContentService.MimeType.JSON);
 
   } catch (err) {
     Logger.log('Error general: ' + err.message);
-    return ContentService
-      .createTextOutput(JSON.stringify({ success: false, error: err.message }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.message })).setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+// ── Guardar en hoja simple ───────────────────────────────────
+function guardarEnHojaSimple(nombreHoja, filas, cabecera) {
+  try {
+    const ss = obtenerSpreadsheet();
+    let hoja = ss.getSheetByName(nombreHoja);
+    if (!hoja) {
+      hoja = ss.insertSheet(nombreHoja);
+      hoja.appendRow(cabecera);
+      hoja.setFrozenRows(1);
+    }
+    filas.forEach(fila => {
+      hoja.appendRow(cabecera.map(c => fila[c] !== undefined ? fila[c] : ''));
+    });
+    return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.message })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ── Responder datos de hoja simple ──────────────────────────
+function responderHoja(nombreHoja, filtros) {
+  try {
+    const ss = obtenerSpreadsheet();
+    const hoja = ss.getSheetByName(nombreHoja);
+    if (!hoja) return ContentService.createTextOutput(JSON.stringify({ success: true, datos: [] })).setMimeType(ContentService.MimeType.JSON);
+    const vals = hoja.getDataRange().getValues();
+    if (vals.length <= 1) return ContentService.createTextOutput(JSON.stringify({ success: true, datos: [] })).setMimeType(ContentService.MimeType.JSON);
+    const cab = vals[0];
+    let filas = vals.slice(1).map(f => { const o = {}; cab.forEach((c,i) => o[c] = f[i]||''); return o; });
+    if (filtros.fecha) filas = filas.filter(r => (r['Fecha']||'').toString().includes(filtros.fecha));
+    filas.reverse();
+    return ContentService.createTextOutput(JSON.stringify({ success: true, datos: filas.slice(0,500) })).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.message })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function obtenerSpreadsheet() {
+  const nombre = 'Inspector App - Reportes';
+  const archivos = DriveApp.getFilesByName(nombre);
+  if (archivos.hasNext()) return SpreadsheetApp.open(archivos.next());
+  return SpreadsheetApp.create(nombre);
 }
 
 // ── Responder consulta del supervisor ───────────────────────
