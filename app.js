@@ -3430,7 +3430,6 @@ function toggleReporte(id) {
 }
 
 function eliminarReporte(idx) {
-    if (!confirm('¿Eliminar este reporte de la vista?')) return;
     _todosLosReportes.splice(idx, 1);
     aplicarFiltros();
 }

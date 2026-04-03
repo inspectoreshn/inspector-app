@@ -982,7 +982,7 @@ body {
     transition: background 0.15s;
 }
 
-.reporte-card-header:hover { background: #f8faff; }
+.reporte-card-header:hover { background: #0d1e3a; }
 
 .reporte-card-header-info {
     display: flex;
@@ -1050,33 +1050,36 @@ body {
 /* Campos en grid */
 .reporte-campos-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    grid-template-columns: 1fr;
+    gap: 6px;
     margin-bottom: 12px;
 }
 
 .reporte-campo {
-    background: #0d1424;
-    border: 1px solid var(--gray-200);
+    background: #0a1628;
+    border: 1px solid #1a2e50;
     border-radius: 8px;
     padding: 8px 12px;
     font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
 }
 
 .reporte-campo strong {
-    display: block;
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--gray-400);
-    text-transform: uppercase;
-    letter-spacing: .4px;
-    margin-bottom: 2px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-500);
+    white-space: nowrap;
+    min-width: 120px;
 }
 
 .reporte-campo span {
     color: var(--gray-800);
-    font-weight: 600;
+    font-weight: 500;
     word-break: break-word;
+    text-align: right;
 }
 
 .reporte-campo-full {
